@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    command: serve
+    environment:
+      EIA_DATASETS: "${EIA_DATASETS:-STEO,TOTAL,INTL,SEDS,IEO}"
+      EIA_DB_PATH: /app/data/eia_bulk.duckdb
+      EIA_DATA_DIR: /app/data
+    volumes:
+      - eia_data:/app/data
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${PORT:-80}:80"
+    volumes:
+      - ./eia-nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+
+volumes:
+  eia_data:

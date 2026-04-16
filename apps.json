@@ -1,0 +1,276 @@
+[
+  {
+    "name": "EIA Energy Data Explorer",
+    "img": "https://www.eia.gov/about/images/eiabuglogo.jpg",
+    "img_dark": "https://www.eia.gov/about/images/eiabuglogo.jpg",
+    "img_light": "https://www.eia.gov/about/images/eiabuglogo.jpg",
+    "description": "Browse, search, and chart U.S. energy time series and tables from Weekly Petroleum Status Report, Short-Term Energy Outlook, and other select databases from the EIA.",
+    "allowCustomization": true,
+    "tabs": {
+      "search--explore": {
+        "id": "search--explore",
+        "name": "Search & Explore",
+        "layout": [
+          {
+            "i": "series_search",
+            "x": 0,
+            "y": 2,
+            "w": 40,
+            "h": 14,
+            "state": {
+              "params": {
+                "dataset_id": "TOTAL",
+                "fuel_type": "electricity",
+                "measure_type": "price",
+                "frequency": "M"
+              },
+              "chartView": {
+                "enabled": false,
+                "chartType": "line"
+              },
+              "columnState": {
+                "default": {
+                  "columnPinning": {
+                    "leftColIds": [
+                      "series_id"
+                    ],
+                    "rightColIds": []
+                  },
+                  "columnOrder": {
+                    "orderedColIds": [
+                      "series_id",
+                      "name",
+                      "units",
+                      "frequency",
+                      "geography",
+                      "dataset_id",
+                      "fuel_type",
+                      "measure_type"
+                    ]
+                  },
+                  "rowSelection": [
+                    "5"
+                  ]
+                }
+              }
+            },
+            "groups": [
+              "Group 1"
+            ]
+          },
+          {
+            "i": "series_detail",
+            "x": 0,
+            "y": 16,
+            "w": 15,
+            "h": 12,
+            "groups": [
+              "Group 1"
+            ]
+          },
+          {
+            "i": "time_series_chart",
+            "x": 15,
+            "y": 16,
+            "w": 25,
+            "h": 12,
+            "state": {
+              "params": {
+                "series_id": "TOTAL.ESRCOUS.M",
+                "start_date": "2019-01-01"
+              },
+              "chartModel": {
+                "modelType": "range",
+                "chartType": "line",
+                "chartOptions": {
+                  "line": {
+                    "series": {
+                      "label": {
+                        "enabled": false
+                      },
+                      "tooltip": {
+                        "enabled": true
+                      }
+                    }
+                  }
+                },
+                "cellRange": {
+                  "columns": [
+                    "date",
+                    "value"
+                  ]
+                },
+                "suppressChartRanges": true
+              },
+              "chartView": {
+                "enabled": true,
+                "chartType": "line",
+                "cellRangeCols": {
+                  "line": [
+                    "date",
+                    "value"
+                  ]
+                }
+              },
+              "columnState": {
+                "default": {
+                  "columnOrder": {
+                    "orderedColIds": [
+                      "date",
+                      "value",
+                      "name",
+                      "units"
+                    ]
+                  }
+                }
+              }
+            },
+            "groups": [
+              "Group 1",
+              "Group 2"
+            ]
+          }
+        ]
+      },
+      "weekly-petroleum-status-report": {
+        "id": "weekly-petroleum-status-report",
+        "name": "Weekly Petroleum Status Report",
+        "layout": [
+          {
+            "i": "wpsr_data",
+            "x": 0,
+            "y": 2,
+            "w": 40,
+            "h": 26,
+            "state": {
+              "params": {
+                "table": "stocks",
+                "start_date": "2019-01-01"
+              },
+              "chartView": {
+                "enabled": false,
+                "chartType": "line"
+              },
+              "columnState": {
+                "default": {
+                  "columnOrder": {
+                    "orderedColIds": [
+                      "date",
+                      "Ending Stocks of Crude Oil",
+                      "Ending Stocks excluding SPR of Crude Oil",
+                      "Ending Stocks of Crude Oil in SPR",
+                      "Ending Stocks of Kerosene-Type Jet Fuel",
+                      "Ending Stocks of Distillate Fuel Oil",
+                      "Ending Stocks of Residual Fuel Oil",
+                      "Ending Stocks of Unfinished Oils",
+                      "Ending Stocks of Gasoline Blending Components",
+                      "Ending Stocks of Total Gasoline",
+                      "Ending Stocks of Crude Oil and Petroleum Products",
+                      "Ending Stocks excluding SPR of Crude Oil and Petroleum Products",
+                      "Ending Stocks of Reformulated Motor Gasoline",
+                      "Ending Stocks of Distillate Fuel Oil, Greater than 15 to 500 ppm Sulfur",
+                      "Ending Stocks of Distillate Fuel Oil, Greater Than 500 ppm Sulfur",
+                      "Ending Stocks of Conventional Motor Gasoline",
+                      "Ending Stocks of Distillate Fuel Oil, 0 to 15 ppm Sulfur",
+                      "Ending Stocks of Fuel Ethanol",
+                      "Ending Stocks of Other Oils (Excluding Fuel Ethanol)",
+                      "Propane and Propylene Ending Stocks Excluding Propylene at Terminal"
+                    ]
+                  }
+                }
+              }
+            },
+            "groups": [
+              "Group 2"
+            ]
+          }
+        ]
+      },
+      "short-term-energy-outlook": {
+        "id": "short-term-energy-outlook",
+        "name": "Short-Term Energy Outlook",
+        "layout": [
+          {
+            "i": "steo_table",
+            "x": 0,
+            "y": 2,
+            "w": 40,
+            "h": 26,
+            "state": {
+              "params": {
+                "table_id": "03d",
+                "start_date": "2019-01-01"
+              },
+              "chartView": {
+                "enabled": false,
+                "chartType": "line"
+              },
+              "columnState": {
+                "default": {
+                  "columnOrder": {
+                    "orderedColIds": [
+                      "date",
+                      "Unplanned crude oil production disruptions, Organization of the Petroleum Exporting Countries, Monthly (million barrels per day)",
+                      "OPEC Total Spare Crude Oil Production Capacity, Monthly (million barrels per day)",
+                      "OPEC Middle East Surplus Crude Oil Production Capacity, Monthly (million barrels per day)",
+                      "OPEC Other Spare Crude Oil Production Capacity, Monthly (million barrels per day)",
+                      "Total World Crude Oil Production, Monthly (million barrels per day)",
+                      "Crude Oil Production, Sudan, Monthly (million barrels per day)",
+                      "OPEC+ Total, Monthly (million barrels per day)",
+                      "Crude Oil Production, Iran, Monthly (million barrels per day)",
+                      "OPEC members subject to OPEC+ agreements, Monthly (million barrels per day)",
+                      "Crude Oil Production, United Arab Emirates, Monthly (million barrels per day)",
+                      "OPEC Other Crude Oil Production Capacity, Monthly (million barrels per day)",
+                      "U.S. Crude Oil Production, Monthly (million barrels per day)",
+                      "Crude Oil Production, Kazakhstan, Monthly (million barrels per day)",
+                      "Crude Oil Production, Oman, Monthly (million barrels per day)",
+                      "Crude Oil Production, Equatorial Guinea, Monthly (million barrels per day)",
+                      "Crude Oil Production, Venezuela, Monthly (million barrels per day)",
+                      "OPEC Total Crude Oil Production Capacity, Monthly (million barrels per day)",
+                      "Crude Oil Production, OPEC Total, Monthly (million barrels per day)",
+                      "Crude Oil Production, Mexico, Monthly (million barrels per day)",
+                      "Crude Oil Production, Iraq, Monthly (million barrels per day)",
+                      "Crude Oil Production, Algeria, Monthly (million barrels per day)",
+                      "Crude Oil Production, Brunei, Monthly (million barrels per day)",
+                      "OPEC+ Other Participants Total, Monthly (million barrels per day)",
+                      "Crude Oil Production, Bahrain, Monthly (million barrels per day)",
+                      "Crude Oil Production, Libya, Monthly (million barrels per day)",
+                      "Non-OPEC+ exluding United States Crude Oil Production, Monthly (million barrels per day)",
+                      "Crude Oil Production, Gabon, Monthly (million barrles per day)",
+                      "Crude Oil Production, Azerbaijan, Monthly (million barrels per day)",
+                      "OPEC Middle East Crude Oil Production Capacity, Monthly (million barrels per day)",
+                      "Crude Oil Production, South Sudan, Monthly (million barrels per day)",
+                      "Crude Oil Production, Kuwait, Monthly (million barrels per day)",
+                      "Crude Oil Production, Saudi Arabia, Monthly (million barrels per day)",
+                      "Crude Oil Production, Russia, Monthly (million barrels per day)",
+                      "Crude Oil Production, Malaysia, Monthly (million barrels per day)",
+                      "Crude Oil Production, Congo (Brazzaville), Monthly (million barrles per day)",
+                      "Crude Oil Production, Nigeria, Monthly (million barrels per day)"
+                    ]
+                  }
+                }
+              }
+            },
+            "groups": [
+              "Group 2"
+            ]
+          }
+        ]
+      }
+    },
+    "groups": [
+      {
+        "name": "Group 1",
+        "type": "param",
+        "paramName": "series_id",
+        "defaultValue": "TOTAL.ESRCOUS.M"
+      },
+      {
+        "name": "Group 2",
+        "type": "param",
+        "paramName": "start_date",
+        "defaultValue": "2019-01-01"
+      }
+    ]
+  }
+]

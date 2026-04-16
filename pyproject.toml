@@ -1,0 +1,18 @@
+[project]
+name = "eia-bulk"
+version = "0.1.0"
+description = "EIA Bulk Data ingester and OpenBB Workspace backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "duckdb>=1.0",
+    "httpx>=0.27",
+    "pandas>=2.2",
+    "python-calamine>=0.6",
+    "tqdm>=4.66",
+    "pydantic-settings>=2.3",
+]
+
+[project.scripts]
+eia-ingest = "src.ingest:main"

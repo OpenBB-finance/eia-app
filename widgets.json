@@ -1,0 +1,383 @@
+{
+  "series_search": {
+    "name": "Series Search",
+    "description": "Search EIA energy series by keyword and facets",
+    "category": "EIA Data",
+    "type": "table",
+    "endpoint": "series_search",
+    "gridData": {
+      "w": 40,
+      "h": 14
+    },
+    "params": [
+      {
+        "paramName": "q",
+        "type": "text",
+        "label": "Search",
+        "value": ""
+      },
+      {
+        "paramName": "dataset_id",
+        "type": "endpoint",
+        "label": "Dataset",
+        "optionsEndpoint": "/dataset_options",
+        "value": ""
+      },
+      {
+        "paramName": "fuel_type",
+        "type": "text",
+        "label": "Fuel Type",
+        "value": "",
+        "options": [
+          {
+            "label": "All",
+            "value": ""
+          },
+          {
+            "label": "Petroleum",
+            "value": "petroleum"
+          },
+          {
+            "label": "Natural Gas",
+            "value": "natural_gas"
+          },
+          {
+            "label": "Coal",
+            "value": "coal"
+          },
+          {
+            "label": "Electricity",
+            "value": "electricity"
+          },
+          {
+            "label": "Nuclear",
+            "value": "nuclear"
+          },
+          {
+            "label": "Renewable",
+            "value": "renewable"
+          },
+          {
+            "label": "Total / Mixed",
+            "value": "total"
+          }
+        ]
+      },
+      {
+        "paramName": "measure_type",
+        "type": "text",
+        "label": "Measure",
+        "value": "",
+        "options": [
+          {
+            "label": "All",
+            "value": ""
+          },
+          {
+            "label": "Price",
+            "value": "price"
+          },
+          {
+            "label": "Production",
+            "value": "production"
+          },
+          {
+            "label": "Consumption",
+            "value": "consumption"
+          },
+          {
+            "label": "Imports",
+            "value": "imports"
+          },
+          {
+            "label": "Exports",
+            "value": "exports"
+          },
+          {
+            "label": "Stocks",
+            "value": "stocks"
+          },
+          {
+            "label": "Reserves",
+            "value": "reserves"
+          },
+          {
+            "label": "Emissions",
+            "value": "emissions"
+          },
+          {
+            "label": "Capacity",
+            "value": "capacity"
+          }
+        ]
+      },
+      {
+        "paramName": "frequency",
+        "type": "text",
+        "label": "Frequency",
+        "value": "",
+        "options": [
+          {
+            "label": "All",
+            "value": ""
+          },
+          {
+            "label": "Annual",
+            "value": "A"
+          },
+          {
+            "label": "Quarterly",
+            "value": "Q"
+          },
+          {
+            "label": "Monthly",
+            "value": "M"
+          }
+        ]
+      },
+      {
+        "paramName": "limit",
+        "type": "number",
+        "label": "Limit",
+        "value": 100
+      }
+    ],
+    "data": {
+      "table": {
+        "showAll": true,
+        "columnsDefs": [
+          {
+            "field": "series_id",
+            "headerName": "Series ID",
+            "cellDataType": "text",
+            "pinned": "left",
+            "renderFn": "cellOnClick",
+            "renderFnParams": {
+              "actionType": "groupBy",
+              "groupBy": {
+                "paramName": "series_id"
+              }
+            }
+          },
+          {
+            "field": "name",
+            "headerName": "Name",
+            "cellDataType": "text"
+          },
+          {
+            "field": "units",
+            "headerName": "Units",
+            "cellDataType": "text"
+          },
+          {
+            "field": "frequency",
+            "headerName": "Freq",
+            "cellDataType": "text"
+          },
+          {
+            "field": "geography",
+            "headerName": "Geography",
+            "cellDataType": "text"
+          },
+          {
+            "field": "dataset_id",
+            "headerName": "Dataset",
+            "cellDataType": "text"
+          },
+          {
+            "field": "fuel_type",
+            "headerName": "Fuel",
+            "cellDataType": "text"
+          },
+          {
+            "field": "measure_type",
+            "headerName": "Measure",
+            "cellDataType": "text"
+          }
+        ]
+      }
+    }
+  },
+  "series_detail": {
+    "name": "Series Detail",
+    "description": "Metadata for the selected series",
+    "category": "EIA Data",
+    "type": "markdown",
+    "endpoint": "series_detail",
+    "gridData": {
+      "w": 15,
+      "h": 12
+    },
+    "params": [
+      {
+        "paramName": "series_id",
+        "type": "text",
+        "label": "Series ID",
+        "value": ""
+      }
+    ]
+  },
+  "time_series_chart": {
+    "name": "Time Series",
+    "description": "Observations for a series as a line chart",
+    "category": "EIA Data",
+    "type": "table",
+    "endpoint": "time_series_chart",
+    "gridData": {
+      "w": 25,
+      "h": 12
+    },
+    "params": [
+      {
+        "paramName": "series_id",
+        "type": "text",
+        "label": "Series ID",
+        "value": ""
+      },
+      {
+        "paramName": "start_date",
+        "type": "date",
+        "label": "Start Date",
+        "value": null
+      },
+      {
+        "paramName": "end_date",
+        "type": "date",
+        "label": "End Date",
+        "value": null
+      }
+    ],
+    "data": {
+      "table": {
+        "showAll": true,
+        "enableCharts": true,
+        "chartView": {
+          "enabled": true,
+          "chartType": "line",
+          "cellRangeCols": {
+            "line": [
+              "date",
+              "value"
+            ]
+          }
+        },
+        "columnsDefs": [
+          {
+            "field": "date",
+            "headerName": "Date",
+            "cellDataType": "text",
+            "chartDataType": "category"
+          },
+          {
+            "field": "value",
+            "headerName": "Value",
+            "cellDataType": "number",
+            "formatterFn": "none",
+            "chartDataType": "series"
+          },
+          {
+            "field": "name",
+            "headerName": "Name",
+            "cellDataType": "text",
+            "chartDataType": "excluded"
+          },
+          {
+            "field": "units",
+            "headerName": "Units",
+            "cellDataType": "text",
+            "chartDataType": "excluded"
+          }
+        ]
+      }
+    }
+  },
+  "steo_table": {
+    "name": "Short-Term Energy Outlook",
+    "description": "Tables from the STEO, organized by topic.",
+    "category": "Commodity",
+    "subCategory": "Energy Outlook",
+    "type": "table",
+    "endpoint": "steo_table",
+    "gridData": {
+      "w": 40,
+      "h": 23
+    },
+    "params": [
+      {
+        "paramName": "table_id",
+        "type": "endpoint",
+        "label": "Table",
+        "optionsEndpoint": "/steo_table_options",
+        "value": "01",
+        "style": {
+          "popupWidth": 600
+        }
+      },
+      {
+        "paramName": "start_date",
+        "type": "date",
+        "label": "Start Date",
+        "value": null
+      },
+      {
+        "paramName": "end_date",
+        "type": "date",
+        "label": "End Date",
+        "value": null
+      }
+    ],
+    "data": {
+      "table": {
+        "showAll": true
+      }
+    }
+  },
+  "wpsr_data": {
+    "name": "Weekly Petroleum Status Report",
+    "description": "WPSR data from the EIA, organized by topic.",
+    "category": "Commodity",
+    "subCategory": "Petroleum",
+    "type": "table",
+    "endpoint": "wpsr_data",
+    "gridData": {
+      "w": 40,
+      "h": 18
+    },
+    "params": [
+      {
+        "paramName": "category",
+        "type": "endpoint",
+        "label": "Category",
+        "optionsEndpoint": "/wpsr_category_options",
+        "value": "balance_sheet"
+      },
+      {
+        "paramName": "table",
+        "type": "endpoint",
+        "label": "Table",
+        "optionsEndpoint": "/wpsr_table_options",
+        "optionsParams": {
+          "category": "$category"
+        },
+        "value": ""
+      },
+      {
+        "paramName": "start_date",
+        "type": "date",
+        "label": "Start Date",
+        "value": null
+      },
+      {
+        "paramName": "end_date",
+        "type": "date",
+        "label": "End Date",
+        "value": null
+      }
+    ],
+    "data": {
+      "table": {
+        "showAll": true
+      }
+    }
+  }
+}
