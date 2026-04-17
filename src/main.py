@@ -6,9 +6,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import duckdb
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
 from .steo_tables import STEO_TABLE_MAP, STEO_TABLE_NAMES
@@ -104,6 +105,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    _NO_CACHE_PATHS = {"/health", "/"}
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if (
+            request.method == "GET"
+            and response.status_code == 200
+            and request.url.path not in self._NO_CACHE_PATHS
+        ):
+            response.headers["Cache-Control"] = "public, max-age=21600"
+        return response
+
+
+class RequireOpenBBUserMiddleware(BaseHTTPMiddleware):
+    _EXEMPT_PATHS = {"/health", "/"}
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS" or request.url.path in self._EXEMPT_PATHS:
+            return await call_next(request)
+        if not request.headers.get("x-openbb-user"):
+            return JSONResponse(
+                status_code=403, content={"detail": "Missing required header."}
+            )
+        return await call_next(request)
+
+
+app.add_middleware(RequireOpenBBUserMiddleware)
+app.add_middleware(CacheControlMiddleware)
 
 
 def _query(sql: str, params: list | None = None) -> list[dict]:
