@@ -115,6 +115,26 @@ def _exec_multi(con: duckdb.DuckDBPyConnection, sql: str) -> None:
 
 def init_schema(con: duckdb.DuckDBPyConnection) -> None:
     _exec_multi(con, SCHEMA_SQL)
+    _ensure_obs_unique_index(con)
+
+
+def _ensure_obs_unique_index(con: duckdb.DuckDBPyConnection) -> None:
+    try:
+        con.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_obs_pk ON observations(series_id, date)"
+        )
+    except Exception:
+        con.execute("""
+            CREATE TABLE _obs_deduped AS
+                SELECT series_id, date, MAX(value) AS value
+                FROM observations
+                GROUP BY series_id, date
+        """)
+        con.execute("DROP TABLE observations")
+        con.execute("ALTER TABLE _obs_deduped RENAME TO observations")
+        con.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_obs_pk ON observations(series_id, date)"
+        )
 
 
 def ensure_indexes(con: duckdb.DuckDBPyConnection) -> None:

@@ -1,8 +1,8 @@
 import asyncio
 import json
 import logging
-import threading
-from contextlib import asynccontextmanager
+import queue
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 import duckdb
@@ -20,9 +20,10 @@ log = logging.getLogger(__name__)
 WIDGETS_FILE = Path(__file__).parent.parent / "widgets.json"
 APPS_FILE = Path(__file__).parent.parent / "apps.json"
 
-db_con: duckdb.DuckDBPyConnection | None = None
-_db_lock = threading.Lock()
+_pool: queue.Queue[duckdb.DuckDBPyConnection] | None = None
 _ingest_task: asyncio.Task | None = None
+_wpsr_task: asyncio.Task | None = None
+POOL_SIZE = 8
 
 
 def _open_read_connection() -> duckdb.DuckDBPyConnection:
@@ -34,7 +35,48 @@ def _open_read_connection() -> duckdb.DuckDBPyConnection:
     return con
 
 
+def _init_pool():
+    global _pool
+    _pool = queue.Queue(maxsize=POOL_SIZE)
+    for _ in range(POOL_SIZE):
+        _pool.put(_open_read_connection())
+
+
+def _drain_pool():
+    global _pool
+    if _pool is None:
+        return
+    while not _pool.empty():
+        try:
+            _pool.get_nowait().close()
+        except queue.Empty:
+            break
+    _pool = None
+
+
+@contextmanager
+def _get_connection():
+    con = _pool.get()
+    try:
+        yield con
+    finally:
+        _pool.put(con)
+
+
 def _seconds_until_next_refresh() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import datetime as dt, timedelta
+
+    et = ZoneInfo("America/New_York")
+    now = dt.now(et)
+    next_run = now.replace(hour=2, minute=0, second=0, microsecond=0)
+    if next_run <= now:
+        next_run += timedelta(days=1)
+    wait = (next_run - now).total_seconds()
+    return max(wait, 60)
+
+
+def _seconds_until_next_wpsr() -> float:
     from zoneinfo import ZoneInfo
     from datetime import datetime as dt, timedelta
 
@@ -57,39 +99,66 @@ async def _ingest_loop():
     while True:
         wait = _seconds_until_next_refresh()
         log.info(
-            "Next ingest scheduled in %.1f hours (Wednesday 11:00 AM ET)", wait / 3600
+            "Next ingest scheduled in %.1f hours (nightly at 2:00 AM ET)", wait / 3600
         )
         await asyncio.sleep(wait)
         try:
             log.info("Scheduled ingest starting")
-            global db_con
-            if db_con:
-                db_con.close()
-                db_con = None
+            _drain_pool()
             await run_ingest()
-            db_con = _open_read_connection()
-            log.info("Scheduled ingest complete, read connection refreshed")
+            _init_pool()
+            log.info("Scheduled ingest complete, connection pool refreshed")
         except Exception:
             log.exception("Scheduled ingest failed")
-            if db_con is None:
-                db_con = _open_read_connection()
+            if _pool is None:
+                _init_pool()
+
+
+async def _wpsr_loop():
+    from .wpsr import ingest_wpsr
+    from .db import get_connection
+
+    while True:
+        wait = _seconds_until_next_wpsr()
+        log.info(
+            "Next WPSR update scheduled in %.1f hours (Wednesday 11:00 AM ET)",
+            wait / 3600,
+        )
+        await asyncio.sleep(wait)
+        try:
+            log.info("WPSR update starting")
+            con = get_connection(read_only=False)
+            stats = ingest_wpsr(con)
+            con.close()
+            log.info(
+                "WPSR update complete: %d tables, %d rows",
+                stats["tables"],
+                stats["rows"],
+            )
+        except Exception:
+            log.exception("WPSR update failed")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global db_con, _ingest_task
+    global _ingest_task, _wpsr_task
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
     )
 
-    db_con = _open_read_connection()
-    log.info("Opened existing database, scheduling background refresh")
+    _init_pool()
+    log.info(
+        "Connection pool initialized (%d connections), scheduling background refresh",
+        POOL_SIZE,
+    )
     _ingest_task = asyncio.create_task(_ingest_loop())
+    _wpsr_task = asyncio.create_task(_wpsr_loop())
     yield
     if _ingest_task:
         _ingest_task.cancel()
-    if db_con:
-        db_con.close()
+    if _wpsr_task:
+        _wpsr_task.cancel()
+    _drain_pool()
 
 
 app = FastAPI(title="EIA Energy Data Explorer", lifespan=lifespan)
@@ -139,10 +208,10 @@ app.add_middleware(CacheControlMiddleware)
 
 
 def _query(sql: str, params: list | None = None) -> list[dict]:
-    if db_con is None:
+    if _pool is None:
         return []
-    with _db_lock:
-        result = db_con.execute(sql, params or [])
+    with _get_connection() as con:
+        result = con.execute(sql, params or [])
         cols = [d[0] for d in result.description]
         return [dict(zip(cols, row)) for row in result.fetchall()]
 
@@ -233,9 +302,8 @@ def get_apps():
 @app.get("/health")
 def health():
     try:
-        with _db_lock:
-            row = db_con.execute("SELECT COUNT(*) FROM datasets").fetchone()
-        return {"status": "ok", "datasets_loaded": row[0]}
+        rows = _query("SELECT COUNT(*) AS c FROM datasets")
+        return {"status": "ok", "datasets_loaded": rows[0]["c"] if rows else 0}
     except Exception as e:
         return JSONResponse({"status": "error", "detail": str(e)}, status_code=503)
 
@@ -495,10 +563,9 @@ def series_search(
 
     if q:
         try:
-            with _db_lock:
-                db_con.execute(
-                    "SELECT * FROM fts_main_series.match_bm25(series_id, 'test') LIMIT 1"
-                )
+            _query(
+                "SELECT * FROM fts_main_series.match_bm25(series_id, 'test') LIMIT 1"
+            )
             fts_available = True
         except Exception:
             fts_available = False

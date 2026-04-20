@@ -12,7 +12,12 @@ import httpx
 import pandas as pd
 from tqdm import tqdm
 
-from .categorize import infer_fuel_type, infer_geography_type, infer_measure_type, parse_units
+from .categorize import (
+    infer_fuel_type,
+    infer_geography_type,
+    infer_measure_type,
+    parse_units,
+)
 from .config import settings
 from .db import build_fts_index, ensure_indexes, get_connection, init_schema
 
@@ -45,12 +50,31 @@ def _parse_date(raw: str) -> str:
         return f"{s[:4]}-{s[4:6]}-{s[6:8]}"
     return s
 
+
 SERIES_COLS = [
-    "series_id", "dataset_id", "name", "description", "units", "unitsshort",
-    "frequency", "geography", "geography_type", "iso3166",
-    "lat", "lon", "geoset_id", "source", "copyright",
-    "start_period", "end_period", "last_updated", "last_historical_period",
-    "fuel_type", "measure_type", "unit_multiplier", "unit_label",
+    "series_id",
+    "dataset_id",
+    "name",
+    "description",
+    "units",
+    "unitsshort",
+    "frequency",
+    "geography",
+    "geography_type",
+    "iso3166",
+    "lat",
+    "lon",
+    "geoset_id",
+    "source",
+    "copyright",
+    "start_period",
+    "end_period",
+    "last_updated",
+    "last_historical_period",
+    "fuel_type",
+    "measure_type",
+    "unit_multiplier",
+    "unit_label",
 ]
 
 
@@ -61,22 +85,25 @@ async def fetch_manifest(client: httpx.AsyncClient) -> dict:
     return raw.get("dataset", raw)
 
 
-async def download_zip(
-    client: httpx.AsyncClient, url: str, dest: Path
-) -> Path:
+async def download_zip(client: httpx.AsyncClient, url: str, dest: Path) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            async with client.stream("GET", url, timeout=600, follow_redirects=True) as resp:
+            async with client.stream(
+                "GET", url, timeout=600, follow_redirects=True
+            ) as resp:
                 resp.raise_for_status()
                 total = int(resp.headers.get("content-length", 0))
-                with open(dest, "wb") as f, tqdm(
-                    total=total,
-                    unit="B",
-                    unit_scale=True,
-                    desc=dest.name,
-                    disable=total == 0,
-                ) as pbar:
+                with (
+                    open(dest, "wb") as f,
+                    tqdm(
+                        total=total,
+                        unit="B",
+                        unit_scale=True,
+                        desc=dest.name,
+                        disable=total == 0,
+                    ) as pbar,
+                ):
                     async for chunk in resp.aiter_bytes(65536):
                         f.write(chunk)
                         pbar.update(len(chunk))
@@ -171,7 +198,7 @@ def _build_series_record(obj: dict, dataset_id: str) -> dict:
 
 def _flush_obs(con, rows: list[tuple]) -> None:
     df = pd.DataFrame(rows, columns=["series_id", "date", "value"])
-    con.execute("INSERT INTO observations SELECT * FROM df")
+    con.execute("INSERT OR IGNORE INTO observations SELECT * FROM df")
 
 
 def load_dataset(dataset_id: str, zip_path: Path, con) -> dict:
@@ -210,13 +237,15 @@ def load_dataset(dataset_id: str, zip_path: Path, con) -> dict:
 
         elif "category_id" in obj:
             cid = obj["category_id"]
-            cat_rows.append((
-                cid,
-                dataset_id,
-                obj.get("name", ""),
-                obj.get("parent_category_id"),
-                obj.get("notes", ""),
-            ))
+            cat_rows.append(
+                (
+                    cid,
+                    dataset_id,
+                    obj.get("name", ""),
+                    obj.get("parent_category_id"),
+                    obj.get("notes", ""),
+                )
+            )
             n_cat += 1
             for sid in obj.get("childseries", []):
                 if sid:
@@ -226,33 +255,54 @@ def load_dataset(dataset_id: str, zip_path: Path, con) -> dict:
 
     if series_rows:
         df_s = pd.DataFrame(series_rows)[SERIES_COLS]
-        con.execute("INSERT INTO series SELECT * FROM df_s")
+        con.execute("INSERT OR REPLACE INTO series SELECT * FROM df_s")
 
     if obs_rows:
         _flush_obs(con, obs_rows)
         total_obs += len(obs_rows)
 
     if cat_rows:
-        df_cat = pd.DataFrame(cat_rows, columns=[
-            "category_id", "dataset_id", "name", "parent_category_id", "notes"
-        ])
-        con.execute("INSERT INTO categories SELECT * FROM df_cat")
+        df_cat = pd.DataFrame(
+            cat_rows,
+            columns=[
+                "category_id",
+                "dataset_id",
+                "name",
+                "parent_category_id",
+                "notes",
+            ],
+        )
+        con.execute("INSERT OR IGNORE INTO categories SELECT * FROM df_cat")
 
     if cat_series_rows:
-        df_cs = pd.DataFrame(cat_series_rows, columns=[
-            "category_id", "dataset_id", "series_id"
-        ])
-        con.execute("INSERT INTO category_series SELECT * FROM df_cs")
+        df_cs = pd.DataFrame(
+            cat_series_rows, columns=["category_id", "dataset_id", "series_id"]
+        )
+        con.execute("INSERT OR IGNORE INTO category_series SELECT * FROM df_cs")
 
-    log.info("  %s: %d series (%d skipped), %d obs, %d categories, %d cat-series links",
-             dataset_id, n_series, skipped_series, total_obs, n_cat, len(cat_series_rows))
+    log.info(
+        "  %s: %d series (%d skipped), %d obs, %d categories, %d cat-series links",
+        dataset_id,
+        n_series,
+        skipped_series,
+        total_obs,
+        n_cat,
+        len(cat_series_rows),
+    )
 
-    return {"series": n_series, "obs": total_obs, "categories": n_cat,
-            "cat_links": len(cat_series_rows), "skipped": skipped_series}
+    return {
+        "series": n_series,
+        "obs": total_obs,
+        "categories": n_cat,
+        "cat_links": len(cat_series_rows),
+        "skipped": skipped_series,
+    }
 
 
 async def run_ingest(dataset_codes: list[str] | None = None, force: bool = False):
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
+    )
 
     con = get_connection(read_only=False)
     init_schema(con)
@@ -307,14 +357,7 @@ async def run_ingest(dataset_codes: list[str] | None = None, force: bool = False
             log.info("Downloading %s (%s)", ds_id, access_url)
             await download_zip(client, access_url, zip_path)
 
-            log.info("Loading %s into DuckDB", ds_id)
-
-            con.execute(
-                "DELETE FROM observations WHERE series_id IN "
-                "(SELECT series_id FROM series WHERE dataset_id = ?)", [ds_id])
-            con.execute("DELETE FROM category_series WHERE dataset_id = ?", [ds_id])
-            con.execute("DELETE FROM categories WHERE dataset_id = ?", [ds_id])
-            con.execute("DELETE FROM series WHERE dataset_id = ?", [ds_id])
+            log.info("Loading %s into DuckDB (incremental)", ds_id)
 
             stats = load_dataset(ds_id, zip_path, con)
             zip_path.unlink(missing_ok=True)
@@ -346,27 +389,29 @@ async def run_ingest(dataset_codes: list[str] | None = None, force: bool = False
     except Exception:
         log.warning("FTS index build failed (non-fatal)", exc_info=True)
 
-    log.info("Ingesting WPSR (Weekly Petroleum Status Report)")
-    try:
-        from .wpsr import ingest_wpsr
-        wpsr_stats = ingest_wpsr(con)
-        log.info("WPSR: %d tables, %d rows", wpsr_stats["tables"], wpsr_stats["rows"])
-    except Exception:
-        log.warning("WPSR ingest failed (non-fatal)", exc_info=True)
-
     con.close()
-    log.info("Ingest complete: %d series, %d obs, %d categories, %d cat-series links",
-             grand["series"], grand["obs"], grand["categories"], grand["cat_links"])
+    log.info(
+        "Ingest complete: %d series, %d obs, %d categories, %d cat-series links",
+        grand["series"],
+        grand["obs"],
+        grand["categories"],
+        grand["cat_links"],
+    )
 
 
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="EIA Bulk Data Ingest")
-    parser.add_argument("--datasets", type=str, default=None,
-                        help="Comma-separated dataset codes or ALL")
-    parser.add_argument("--force", action="store_true",
-                        help="Force reload even if unchanged")
+    parser.add_argument(
+        "--datasets",
+        type=str,
+        default=None,
+        help="Comma-separated dataset codes or ALL",
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Force reload even if unchanged"
+    )
     args = parser.parse_args()
 
     codes = None

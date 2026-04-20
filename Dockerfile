@@ -11,11 +11,9 @@ RUN pip install --no-cache-dir .
 COPY widgets.json apps.json entrypoint.sh ./
 
 RUN chmod +x entrypoint.sh && \
-    mkdir -p data _built_data && chown -R eia:eia /app
+    mkdir -p data && chown -R eia:eia /app
 
 USER eia
-
-RUN EIA_DB_PATH=/app/_built_data/eia_bulk.duckdb EIA_DATA_DIR=/app/_built_data python -m src.ingest
 
 EXPOSE 7779
 

@@ -1,9 +1,11 @@
 #!/bin/sh
 set -e
 
-if [ ! -f "${EIA_DB_PATH:-/app/data/eia_bulk.duckdb}" ] && [ -f /app/_built_data/eia_bulk.duckdb ]; then
-    echo "Seeding database from build-time snapshot..."
-    cp /app/_built_data/eia_bulk.duckdb "${EIA_DB_PATH:-/app/data/eia_bulk.duckdb}"
+DB_PATH="${EIA_DB_PATH:-/app/data/eia_bulk.duckdb}"
+
+if [ ! -f "$DB_PATH" ]; then
+    echo "No database found at $DB_PATH, running initial ingestion..."
+    python -m src.ingest
 fi
 
 case "$1" in
