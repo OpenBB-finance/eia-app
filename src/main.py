@@ -93,10 +93,53 @@ def _seconds_until_next_wpsr() -> float:
     return max(wait, 60)
 
 
+async def _wait_for_write_lock(max_wait: float = 600.0, interval: float = 5.0) -> bool:
+    from .db import get_connection
+
+    waited = 0.0
+    while waited < max_wait:
+        try:
+            con = get_connection(read_only=False)
+            con.close()
+            return True
+        except Exception as e:
+            if "lock" not in str(e).lower():
+                log.exception("Unexpected error acquiring write lock")
+                return False
+            log.info(
+                "DB write lock held by another process, waiting %.0fs (waited %.0fs)",
+                interval,
+                waited,
+            )
+            await asyncio.sleep(interval)
+            waited += interval
+    log.error("Timed out waiting for DB write lock after %.0fs", max_wait)
+    return False
+
+
 async def _ingest_loop():
     from .ingest import run_ingest
 
+    first = True
     while True:
+        if first:
+            first = False
+            log.info("Startup ingest: waiting for DB write lock to be released")
+            if await _wait_for_write_lock():
+                try:
+                    log.info("Startup ingest starting")
+                    _drain_pool()
+                    await run_ingest()
+                    _init_pool()
+                    log.info("Startup ingest complete, connection pool refreshed")
+                except Exception:
+                    log.exception("Startup ingest failed")
+                    if _pool is None:
+                        _init_pool()
+            else:
+                log.error("Startup ingest skipped: could not acquire DB write lock")
+            continue
+
         wait = _seconds_until_next_refresh()
         log.info(
             "Next ingest scheduled in %.1f hours (nightly at 2:00 AM ET)", wait / 3600
@@ -118,6 +161,19 @@ async def _wpsr_loop():
     from .wpsr import ingest_wpsr
     from .db import get_connection
 
+    log.info("Startup WPSR check: waiting for DB write lock")
+    if await _wait_for_write_lock():
+        try:
+            log.info("Startup WPSR ingest starting")
+            con = get_connection(read_only=False)
+            stats = ingest_wpsr(con)
+            con.close()
+            log.info("Startup WPSR ingest complete: %s", stats)
+        except Exception:
+            log.exception("Startup WPSR ingest failed")
+    else:
+        log.error("Startup WPSR ingest skipped: could not acquire DB write lock")
+
     while True:
         wait = _seconds_until_next_wpsr()
         log.info(
@@ -130,11 +186,7 @@ async def _wpsr_loop():
             con = get_connection(read_only=False)
             stats = ingest_wpsr(con)
             con.close()
-            log.info(
-                "WPSR update complete: %d tables, %d rows",
-                stats["tables"],
-                stats["rows"],
-            )
+            log.info("WPSR update complete: %s", stats)
         except Exception:
             log.exception("WPSR update failed")
 
