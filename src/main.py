@@ -23,6 +23,7 @@ APPS_FILE = Path(__file__).parent.parent / "apps.json"
 _pool: queue.Queue[duckdb.DuckDBPyConnection] | None = None
 _ingest_task: asyncio.Task | None = None
 _wpsr_task: asyncio.Task | None = None
+_startup_task: asyncio.Task | None = None
 POOL_SIZE = 8
 
 
@@ -103,11 +104,18 @@ async def _wait_for_write_lock(max_wait: float = 600.0, interval: float = 5.0) -
             con.close()
             return True
         except Exception as e:
-            if "lock" not in str(e).lower():
+            msg = str(e).lower()
+            transient = (
+                "lock" in msg
+                or "different configuration" in msg
+                or "already open" in msg
+            )
+            if not transient:
                 log.exception("Unexpected error acquiring write lock")
                 return False
             log.info(
-                "DB write lock held by another process, waiting %.0fs (waited %.0fs)",
+                "DB write lock unavailable (%s), waiting %.0fs (waited %.0fs)",
+                e.__class__.__name__,
                 interval,
                 waited,
             )
@@ -117,29 +125,45 @@ async def _wait_for_write_lock(max_wait: float = 600.0, interval: float = 5.0) -
     return False
 
 
+async def _startup_ingest():
+    from .ingest import run_ingest
+    from .wpsr import ingest_wpsr
+    from .db import get_connection
+
+    log.info("Startup ingest: draining read pool and waiting for DB write lock")
+    _drain_pool()
+
+    if not await _wait_for_write_lock():
+        log.error("Startup ingest skipped: could not acquire DB write lock")
+        _init_pool()
+        return
+
+    try:
+        log.info("Startup bulk ingest starting")
+        await run_ingest()
+        log.info("Startup bulk ingest complete")
+    except Exception:
+        log.exception("Startup bulk ingest failed")
+
+    try:
+        log.info("Startup WPSR ingest starting")
+        con = get_connection(read_only=False)
+        try:
+            stats = ingest_wpsr(con)
+        finally:
+            con.close()
+        log.info("Startup WPSR ingest complete: %s", stats)
+    except Exception:
+        log.exception("Startup WPSR ingest failed")
+
+    _init_pool()
+    log.info("Startup ingest complete, connection pool refreshed")
+
+
 async def _ingest_loop():
     from .ingest import run_ingest
 
-    first = True
     while True:
-        if first:
-            first = False
-            log.info("Startup ingest: waiting for DB write lock to be released")
-            if await _wait_for_write_lock():
-                try:
-                    log.info("Startup ingest starting")
-                    _drain_pool()
-                    await run_ingest()
-                    _init_pool()
-                    log.info("Startup ingest complete, connection pool refreshed")
-                except Exception:
-                    log.exception("Startup ingest failed")
-                    if _pool is None:
-                        _init_pool()
-            else:
-                log.error("Startup ingest skipped: could not acquire DB write lock")
-            continue
-
         wait = _seconds_until_next_refresh()
         log.info(
             "Next ingest scheduled in %.1f hours (nightly at 2:00 AM ET)", wait / 3600
@@ -161,19 +185,6 @@ async def _wpsr_loop():
     from .wpsr import ingest_wpsr
     from .db import get_connection
 
-    log.info("Startup WPSR check: waiting for DB write lock")
-    if await _wait_for_write_lock():
-        try:
-            log.info("Startup WPSR ingest starting")
-            con = get_connection(read_only=False)
-            stats = ingest_wpsr(con)
-            con.close()
-            log.info("Startup WPSR ingest complete: %s", stats)
-        except Exception:
-            log.exception("Startup WPSR ingest failed")
-    else:
-        log.error("Startup WPSR ingest skipped: could not acquire DB write lock")
-
     while True:
         wait = _seconds_until_next_wpsr()
         log.info(
@@ -193,7 +204,7 @@ async def _wpsr_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _ingest_task, _wpsr_task
+    global _ingest_task, _wpsr_task, _startup_task
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
     )
@@ -203,9 +214,12 @@ async def lifespan(app: FastAPI):
         "Connection pool initialized (%d connections), scheduling background refresh",
         POOL_SIZE,
     )
+    _startup_task = asyncio.create_task(_startup_ingest())
     _ingest_task = asyncio.create_task(_ingest_loop())
     _wpsr_task = asyncio.create_task(_wpsr_loop())
     yield
+    if _startup_task:
+        _startup_task.cancel()
     if _ingest_task:
         _ingest_task.cancel()
     if _wpsr_task:
