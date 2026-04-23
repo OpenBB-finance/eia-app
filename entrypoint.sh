@@ -6,6 +6,9 @@ DB_PATH="${EIA_DB_PATH:-/app/data/eia_bulk.duckdb}"
 if [ ! -f "$DB_PATH" ]; then
     echo "No database found at $DB_PATH, running initial ingestion..."
     python -m src.ingest
+else
+    echo "Database found at $DB_PATH, running incremental ingestion to fetch any missing data..."
+    python -m src.ingest || echo "Ingestion failed (non-fatal), continuing with existing data..."
 fi
 
 case "$1" in

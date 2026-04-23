@@ -20,6 +20,7 @@ from .categorize import (
 )
 from .config import settings
 from .db import build_fts_index, ensure_indexes, get_connection, init_schema
+from .wpsr import ingest_wpsr
 
 log = logging.getLogger(__name__)
 
@@ -388,6 +389,13 @@ async def run_ingest(dataset_codes: list[str] | None = None, force: bool = False
         build_fts_index(con)
     except Exception:
         log.warning("FTS index build failed (non-fatal)", exc_info=True)
+
+    log.info("Ingesting WPSR data")
+    try:
+        wpsr_stats = ingest_wpsr(con)
+        log.info("WPSR ingest: %s", wpsr_stats)
+    except Exception:
+        log.warning("WPSR ingest failed (non-fatal)", exc_info=True)
 
     con.close()
     log.info(
