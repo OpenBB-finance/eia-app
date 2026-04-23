@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-RUN groupadd -r eia && useradd -r -g eia -m eia
+RUN groupadd -g 32767 eia && useradd -u 32767 -g 32767 -m eia
 
 WORKDIR /app
 

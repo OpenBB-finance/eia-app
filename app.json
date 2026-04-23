@@ -6,7 +6,7 @@
         "name": "web check",
         "path": "/health",
         "attempts": 3,
-        "wait": 10,
+        "wait": 60,
         "timeout": 30
       }
     ]
