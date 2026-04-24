@@ -8,7 +8,7 @@ from pathlib import Path
 import duckdb
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
@@ -19,6 +19,13 @@ log = logging.getLogger(__name__)
 
 WIDGETS_FILE = Path(__file__).parent.parent / "widgets.json"
 APPS_FILE = Path(__file__).parent.parent / "apps.json"
+STATIC_DIR = Path(__file__).parent
+PUBLIC_STATIC_FILES: dict[str, tuple[str, str]] = {
+    "openbb-logo.svg": ("openbb-logo.svg", "image/svg+xml"),
+    "openbb-eia-app-screenshot1.png": ("openbb-eia-app-screenshot1.png", "image/png"),
+    "openbb-eia-app-screenshot2.png": ("openbb-eia-app-screenshot2.png", "image/png"),
+    "openbb-eia-app-screenshot3.png": ("openbb-eia-app-screenshot3.png", "image/png"),
+}
 
 _pool: queue.Queue[duckdb.DuckDBPyConnection] | None = None
 _ingest_task: asyncio.Task | None = None
@@ -260,7 +267,15 @@ class RequireOpenBBUserMiddleware(BaseHTTPMiddleware):
     _EXEMPT_PATHS = {"/health", "/"}
 
     async def dispatch(self, request: Request, call_next):
-        if request.method == "OPTIONS" or request.url.path in self._EXEMPT_PATHS:
+        path = request.url.path
+        if (
+            request.method == "OPTIONS"
+            or path in self._EXEMPT_PATHS
+            or (
+                path.startswith("/static/")
+                and path[len("/static/") :] in PUBLIC_STATIC_FILES
+            )
+        ):
             return await call_next(request)
         if not request.headers.get("x-openbb-user"):
             return JSONResponse(
@@ -271,6 +286,15 @@ class RequireOpenBBUserMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(RequireOpenBBUserMiddleware)
 app.add_middleware(CacheControlMiddleware)
+
+
+@app.get("/static/{filename}")
+def serve_static(filename: str):
+    entry = PUBLIC_STATIC_FILES.get(filename)
+    if entry is None:
+        return JSONResponse({"detail": "Not found"}, status_code=404)
+    name, media_type = entry
+    return FileResponse(STATIC_DIR / name, media_type=media_type)
 
 
 def _query(sql: str, params: list | None = None) -> list[dict]:
