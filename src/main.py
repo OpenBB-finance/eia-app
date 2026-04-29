@@ -250,7 +250,7 @@ app.add_middleware(
 
 
 class CacheControlMiddleware(BaseHTTPMiddleware):
-    _NO_CACHE_PATHS = {"/health", "/"}
+    _NO_CACHE_PATHS = {"/health", "/", "/widgets.json", "/apps.json"}
 
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
