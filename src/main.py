@@ -21,7 +21,7 @@ WIDGETS_FILE = Path(__file__).parent.parent / "widgets.json"
 APPS_FILE = Path(__file__).parent.parent / "apps.json"
 STATIC_DIR = Path(__file__).parent
 PUBLIC_STATIC_FILES: dict[str, tuple[str, str]] = {
-    "openbb-logo.svg": ("openbb-logo.svg", "image/svg+xml"),
+    "openbb-logo.svg": ("openbb-logo.png", "image/png"),
     "openbb-eia-app-screenshot1.png": ("openbb-eia-app-screenshot1.png", "image/png"),
     "openbb-eia-app-screenshot2.png": ("openbb-eia-app-screenshot2.png", "image/png"),
     "openbb-eia-app-screenshot3.png": ("openbb-eia-app-screenshot3.png", "image/png"),
