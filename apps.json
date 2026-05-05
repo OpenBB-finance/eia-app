@@ -270,6 +270,13 @@
         "paramName": "start_date",
         "defaultValue": "2019-01-01"
       }
+    ],
+    "mcp_servers": [
+      {
+        "name": "OpenBB Docs",
+        "description": "Testing",
+        "url": "https://openbb-docs-mcp.external.openbb.app/mcp"
+      }
     ]
   }
 ]
