@@ -1,9 +1,8 @@
 [
   {
     "name": "EIA Energy Data Explorer",
-    "img": "https://www.eia.gov/about/images/eiabuglogo.jpg",
-    "img_dark": "https://www.eia.gov/about/images/eiabuglogo.jpg",
-    "img_light": "https://www.eia.gov/about/images/eiabuglogo.jpg",
+    "img_dark": "https://eia.external.openbb.app/static/openbb-eia-app-cover-dark.png",
+    "img_light": "https://eia.external.openbb.app/static/openbb-eia-app-cover-light.png",
     "description": "Browse, search, and chart U.S. energy time series and tables from Weekly Petroleum Status Report, Short-Term Energy Outlook, and other select databases from the EIA.",
     "allowCustomization": true,
     "tabs": {
