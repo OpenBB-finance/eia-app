@@ -30,9 +30,7 @@
               "columnState": {
                 "default": {
                   "columnPinning": {
-                    "leftColIds": [
-                      "series_id"
-                    ],
+                    "leftColIds": ["series_id"],
                     "rightColIds": []
                   },
                   "columnOrder": {
@@ -47,15 +45,11 @@
                       "measure_type"
                     ]
                   },
-                  "rowSelection": [
-                    "5"
-                  ]
+                  "rowSelection": ["5"]
                 }
               }
             },
-            "groups": [
-              "Group 1"
-            ]
+            "groups": ["Group 1"]
           },
           {
             "i": "series_detail",
@@ -63,9 +57,7 @@
             "y": 16,
             "w": 15,
             "h": 12,
-            "groups": [
-              "Group 1"
-            ]
+            "groups": ["Group 1"]
           },
           {
             "i": "time_series_chart",
@@ -94,10 +86,7 @@
                   }
                 },
                 "cellRange": {
-                  "columns": [
-                    "date",
-                    "value"
-                  ]
+                  "columns": ["date", "value"]
                 },
                 "suppressChartRanges": true
               },
@@ -105,29 +94,18 @@
                 "enabled": true,
                 "chartType": "line",
                 "cellRangeCols": {
-                  "line": [
-                    "date",
-                    "value"
-                  ]
+                  "line": ["date", "value"]
                 }
               },
               "columnState": {
                 "default": {
                   "columnOrder": {
-                    "orderedColIds": [
-                      "date",
-                      "value",
-                      "name",
-                      "units"
-                    ]
+                    "orderedColIds": ["date", "value", "name", "units"]
                   }
                 }
               }
             },
-            "groups": [
-              "Group 1",
-              "Group 2"
-            ]
+            "groups": ["Group 1", "Group 2"]
           }
         ]
       },
@@ -179,9 +157,7 @@
                 }
               }
             },
-            "groups": [
-              "Group 2"
-            ]
+            "groups": ["Group 2"]
           }
         ]
       },
@@ -250,9 +226,7 @@
                 }
               }
             },
-            "groups": [
-              "Group 2"
-            ]
+            "groups": ["Group 2"]
           }
         ]
       }
@@ -269,13 +243,6 @@
         "type": "param",
         "paramName": "start_date",
         "defaultValue": "2019-01-01"
-      }
-    ],
-    "mcp_servers": [
-      {
-        "name": "OpenBB Docs",
-        "description": "Testing",
-        "url": "https://openbb-docs-mcp.external.openbb.app/mcp"
       }
     ]
   }
