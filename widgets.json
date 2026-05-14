@@ -199,7 +199,7 @@
     }
   },
   "series_detail": {
-    "name": "Series Detail",
+    "name": "EIA Series Detail",
     "description": "Metadata for the selected series",
     "category": "EIA Data",
     "type": "markdown",
@@ -218,7 +218,7 @@
     ]
   },
   "time_series_chart": {
-    "name": "EIA Time Series",
+    "name": "EIA Time Series Data",
     "description": "Observations for a series as a line chart",
     "category": "EIA Data",
     "type": "table",
