@@ -1,6 +1,6 @@
 {
   "series_search": {
-    "name": "Series Search",
+    "name": "EIA Series Search",
     "description": "Search EIA energy series by keyword and facets",
     "category": "EIA Data",
     "type": "table",
@@ -218,7 +218,7 @@
     ]
   },
   "time_series_chart": {
-    "name": "Time Series",
+    "name": "EIA Time Series",
     "description": "Observations for a series as a line chart",
     "category": "EIA Data",
     "type": "table",
